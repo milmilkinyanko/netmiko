@@ -1037,11 +1037,20 @@ You can look at the Netmiko session_log or debug log for more information.
                 raise ValueError(
                     "ProxyJump with more than one proxy server is not supported."
                 )
+
             port = source.get("port", self.port)
-            host = source.get("hostname", self.host)
-            # -F {full_path} forces the continued use of the same SSH config file
-            cmd = "ssh -F {} -W {}:{} {}".format(full_path, host, port, hops[0])
-            proxy = paramiko.ProxyCommand(cmd)
+            username = source.get("user", self.username)
+            kwargs = dict(
+                hostname = hops[0],
+                port = port,
+                username = username,
+                password = self.password
+            )
+            hop_client = self._build_ssh_client()
+            hop_client.connect(**kwargs)
+            proxy = hop_client.get_transport().open_channel(
+                'direct-tcpip', (self.host, self.port), ('', 0)
+            )
         else:
             proxy = None
 
